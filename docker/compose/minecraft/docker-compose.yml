@@ -14,6 +14,7 @@ services:
       MEMORY: "4G"
       MAX_PLAYERS: "10"
       MODRINTH_PROJECTS: "geyser,viaversion,viabackwards,viarewind"
+      MODRINTH_ALLOWED_VERSION_TYPE: "release,beta,alpha"
       ENABLE_AUTOPAUSE: "false"
       # Aternos sometimes uses weird level names, we explicitly set it to world
       LEVEL: "world"
