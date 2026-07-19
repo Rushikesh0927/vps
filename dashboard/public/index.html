@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rushi's Minecraft Server</title>
+    <meta name="description" content="Rushi's Minecraft server control center — live metrics, console, files, and power controls.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+
+<!-- ===================== LOGIN PAGE ===================== -->
+<div id="page-login" class="page active">
+    <div class="login-scan" aria-hidden="true"></div>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-head">
+                <div class="brand-mark">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.3 8 10 4.6-1.7 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                <div>
+                    <h1 class="login-title">Rushi's Minecraft Server</h1>
+                    <p class="login-subtitle">Control center access</p>
+                </div>
+            </div>
+
+            <div class="login-tabs" role="tablist">
+                <span class="login-tab-glider" id="tab-glider" aria-hidden="true"></span>
+                <button class="login-tab active" data-tab="friend" role="tab" aria-selected="true" onclick="switchLoginTab('friend')">Friend</button>
+                <button class="login-tab" data-tab="admin" role="tab" aria-selected="false" onclick="switchLoginTab('admin')">Admin</button>
+            </div>
+
+            <div id="login-friend" class="login-form active">
+                <div class="input-group">
+                    <label for="input-pin">Server PIN</label>
+                    <div class="input-wrap">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" id="input-pin" placeholder="••••" maxlength="10" autocomplete="off" inputmode="numeric">
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="loginFriend()">
+                    <span>Enter Server</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+
+            <div id="login-admin" class="login-form">
+                <div class="input-group">
+                    <label for="input-admin-pass">Admin Password</label>
+                    <div class="input-wrap">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V5z"/></svg>
+                        <input type="password" id="input-admin-pass" placeholder="Enter admin password" autocomplete="off">
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="loginAdmin()">
+                    <span>Authenticate</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+
+            <div id="login-error" class="login-error" role="alert"></div>
+        </div>
+        <p class="login-foot"><span class="led led-green"></span> Secured &middot; rushiserver.duckdns.org</p>
+    </div>
+</div>
+
+<!-- ===================== DASHBOARD PAGE ===================== -->
+<div id="page-dashboard" class="page">
+    <!-- Top Command Bar -->
+    <nav class="cmdbar">
+        <div class="cmd-left">
+            <div class="brand-mark sm">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.3 8 10 4.6-1.7 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <span class="cmd-brand">Rushi's&nbsp;MC</span>
+            <span class="node-chip"><span class="led" id="node-led"></span>minecraft-01</span>
+        </div>
+        <div class="cmd-right">
+            <span class="cmd-clock" id="cmd-clock">--:--:--</span>
+            <span class="role-chip" id="role-chip"></span>
+            <button class="cmd-btn danger" onclick="logout()" aria-label="Log out">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                <span>Logout</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="dashboard-body">
+        <!-- ===== ADMIN RAIL (left sidebar, admin-only) ===== -->
+        <aside class="admin-rail" id="admin-rail">
+            <button class="rail-btn active" id="rail-btn-cockpit" onclick="switchRailTab(this,'cockpit')" title="Dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                <span>Dashboard</span>
+            </button>
+            <button class="rail-btn" id="rail-btn-console" onclick="switchRailTab(this,'console')" title="Console">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <span>Console</span>
+            </button>
+            <button class="rail-btn" id="rail-btn-files" onclick="switchRailTab(this,'files')" title="Files">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span>Files</span>
+            </button>
+            <button class="rail-btn" id="rail-btn-plugins" onclick="switchRailTab(this,'plugins')" title="Plugins">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                <span>Plugins</span>
+            </button>
+            <button class="rail-btn" id="rail-btn-backups" onclick="switchRailTab(this,'backups')" title="Backups">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Backups</span>
+            </button>
+        </aside>
+
+        <!-- ===== MAIN CONTENT AREA ===== -->
+        <div class="admin-drawer" id="admin-drawer">
+
+            <!-- Cockpit Tab -->
+            <div id="rail-cockpit" class="rail-tab active">
+                <div class="cockpit" id="cockpit">
+                    <!-- Metric strip -->
+                    <section class="metric-strip" aria-label="Live metrics">
+                        <div class="metric-tile" id="tile-status">
+                            <div class="metric-top"><span class="metric-label">Status</span></div>
+                            <div class="metric-main"><span class="led lg" id="status-led"></span><span class="metric-value txt" id="status-text">—</span></div>
+                            <div class="metric-foot" id="status-foot">checking node</div>
+                        </div>
+                        <div class="metric-tile">
+                            <div class="metric-top"><span class="metric-label">Players</span><span class="metric-delta" id="players-delta"></span></div>
+                            <div class="metric-main"><span class="metric-value" id="stat-players" data-num="0">0</span><span class="metric-unit">/ <span id="stat-max">20</span></span></div>
+                            <div class="capacity"><span class="capacity-fill" id="capacity-fill"></span></div>
+                        </div>
+                        <div class="metric-tile">
+                            <div class="metric-top"><span class="metric-label">CPU</span></div>
+                            <div class="metric-main"><span class="metric-value" id="stat-cpu">--</span><span class="metric-unit">%</span></div>
+                            <svg class="spark" id="spark-cpu" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+                        </div>
+                        <div class="metric-tile">
+                            <div class="metric-top"><span class="metric-label">Memory</span></div>
+                            <div class="metric-main"><span class="metric-value" id="stat-mem">--</span><span class="metric-unit" id="stat-mem-unit">%</span></div>
+                            <svg class="spark" id="spark-mem" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+                        </div>
+                        <div class="metric-tile">
+                            <div class="metric-top"><span class="metric-label">Network</span></div>
+                            <div class="metric-main net"><span class="net-row"><span class="net-arrow down">↓</span><span class="metric-value sm" id="stat-rx">--</span></span><span class="net-row"><span class="net-arrow up">↑</span><span class="metric-value sm" id="stat-tx">--</span></span></div>
+                            <div class="metric-foot">transfer / s</div>
+                        </div>
+                        <div class="metric-tile">
+                            <div class="metric-top"><span class="metric-label">Uptime</span></div>
+                            <div class="metric-main"><span class="metric-value" id="stat-uptime">--</span></div>
+                            <div class="metric-foot">since last start</div>
+                        </div>
+                        <div class="metric-tile">
+                            <div class="metric-top"><span class="metric-label">Ping</span></div>
+                            <div class="metric-main"><span class="metric-value" id="stat-latency">--</span><span class="metric-unit">ms</span></div>
+                            <div class="metric-foot">dashboard → node</div>
+                        </div>
+                    </section>
+
+                    <!-- Main grid -->
+                    <div class="cockpit-grid">
+                        <!-- Server panel -->
+                        <section class="panel server-panel">
+                            <header class="panel-head">
+                                <h2>Server</h2>
+                                <span class="panel-tag" id="version-tag">Java 1.21</span>
+                            </header>
+                            <div class="panel-body">
+                                <div class="addr-list">
+                                    <div class="addr-row">
+                                        <span class="addr-badge java">JAVA</span>
+                                        <span class="addr-value" id="conn-java">rushiserver.duckdns.org:25565</span>
+                                        <button class="btn-copy" onclick="copyText('rushiserver.duckdns.org:25565', this)" aria-label="Copy Java address">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="addr-row">
+                                        <span class="addr-badge bedrock">BEDROCK</span>
+                                        <span class="addr-value" id="conn-bedrock">rushiserver.duckdns.org:19132</span>
+                                        <button class="btn-copy" onclick="copyText('rushiserver.duckdns.org:19132', this)" aria-label="Copy Bedrock address">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="power-label">Power</div>
+                                <div class="segmented" role="group" aria-label="Power controls">
+                                    <button class="seg-btn start" onclick="powerAction('start')" id="btn-start">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Start</span>
+                                    </button>
+                                    <button class="seg-btn restart" onclick="powerAction('restart')" id="btn-restart">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span>Restart</span>
+                                    </button>
+                                    <button class="seg-btn stop" onclick="powerAction('stop')" id="btn-stop">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg><span>Stop</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Charts panel -->
+                        <section class="panel charts-panel">
+                            <header class="panel-head">
+                                <h2>Resource Usage</h2>
+                                <span class="panel-legend"><span class="lg-dot cpu"></span>CPU <span class="lg-dot mem"></span>Memory</span>
+                            </header>
+                            <div class="panel-body chart-body">
+                                <div class="chart-block">
+                                    <div class="chart-title"><span>CPU</span><span class="chart-now" id="chart-cpu-now">--%</span></div>
+                                    <svg class="area-chart" id="chart-cpu" viewBox="0 0 300 80" preserveAspectRatio="none" aria-label="CPU usage over time"></svg>
+                                </div>
+                                <div class="chart-block">
+                                    <div class="chart-title"><span>Memory</span><span class="chart-now" id="chart-mem-now">--%</span></div>
+                                    <svg class="area-chart" id="chart-mem" viewBox="0 0 300 80" preserveAspectRatio="none" aria-label="Memory usage over time"></svg>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Players panel -->
+                        <section class="panel players-panel">
+                            <header class="panel-head">
+                                <h2>Players</h2>
+                                <span class="panel-count" id="players-badge">0</span>
+                            </header>
+                            <div class="panel-body" id="players-container">
+                                <div class="empty-state">No players online</div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <footer class="cockpit-foot">
+                        <span>Auto-refresh 5s</span><span class="dot-sep">•</span><span id="last-updated">syncing…</span>
+                    </footer>
+                </div>
+            </div>
+
+            <!-- Console Tab -->
+            <div id="rail-console" class="rail-tab">
+                <div class="drawer-bar">
+                    <h3>Live Console</h3>
+                    <div class="admin-tools">
+                        <div class="search-wrap">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="text" id="console-search" placeholder="Filter…" oninput="renderLogs()" aria-label="Filter logs">
+                        </div>
+                        <label class="toggle" title="Auto-refresh logs">
+                            <input type="checkbox" id="console-auto" onchange="toggleConsoleAuto()">
+                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            <span class="toggle-label">Live</span>
+                        </label>
+                        <button class="btn-sm" onclick="refreshLogs()" id="btn-refresh-logs">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="console-output" id="console-output"></div>
+                <!-- Minecraft Command Input -->
+                <div class="cmd-input-bar">
+                    <span class="mc-prompt">/</span>
+                    <input type="text" id="mc-cmd-input" class="mc-cmd-field" placeholder="seed  ·  op playername  ·  time set day" onkeydown="if(event.key==='Enter')sendCommand()" autocomplete="off" spellcheck="false">
+                    <button class="mc-cmd-run" onclick="sendCommand()" title="Send command">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Files Tab -->
+            <div id="rail-files" class="rail-tab">
+                <div class="drawer-bar">
+                    <div class="breadcrumb" id="breadcrumb">~</div>
+                </div>
+                <div class="files-list" id="files-list"></div>
+            </div>
+
+            <!-- Plugins Tab -->
+            <div id="rail-plugins" class="rail-tab">
+                <div class="drawer-bar">
+                    <h3>Plugins</h3>
+                    <label class="btn-upload">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload .jar
+                        <input type="file" accept=".jar" id="plugin-upload" onchange="handlePluginUpload(event)" hidden>
+                    </label>
+                </div>
+                <div class="plugins-list" id="plugins-list"></div>
+            </div>
+
+            <!-- Backups Tab -->
+            <div id="rail-backups" class="rail-tab">
+                <div class="drawer-bar">
+                    <div>
+                        <h3>Google Drive Backups</h3>
+                        <p class="drawer-sub">Auto-backup every 5 min &middot; max 3 kept</p>
+                    </div>
+                    <button class="btn-sm" onclick="loadBackups()" id="btn-refresh-backups">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+                <div class="backups-list" id="backups-list">
+                    <div class="empty-state">Loading backups…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== FILE EDITOR MODAL ===================== -->
+<div id="editor-modal" class="modal">
+    <div class="modal-backdrop" onclick="closeEditor()"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+        <div class="modal-header">
+            <h3 id="editor-title">Edit File</h3>
+            <button class="modal-close" onclick="closeEditor()" aria-label="Close editor">&times;</button>
+        </div>
+        <textarea id="editor-textarea" spellcheck="false" aria-label="File contents"></textarea>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeEditor()">Cancel</button>
+            <button class="btn-primary" onclick="saveFile()"><span>Save Changes</span></button>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== TOAST ===================== -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <!-- JavaScript -->
+    <script src="/script.js?v=3" defer></script>
+</body>
+</html>

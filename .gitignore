@@ -1,6 +1,8 @@
-rclone.conf
-rclone.exe
-vps.zip
-test_deploy.py
-*.log
-.secrets/
+minecraft_worlds/
+dashboard/node_modules/
+__pycache__/
+*.pyc
+.env
+*.conf
+*.exe
+*.zip
