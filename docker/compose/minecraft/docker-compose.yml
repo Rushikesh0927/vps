@@ -11,14 +11,19 @@ services:
       EULA: "TRUE"
       TYPE: "PAPER"
       VERSION: "1.21.1"
-      MEMORY: "16G"
+      MEMORY: "6G"
       MAX_PLAYERS: "10"
       MODRINTH_PROJECTS: "geyser,viaversion,viabackwards,viarewind"
       MODRINTH_ALLOWED_VERSION_TYPE: "beta"
       ONLINE_MODE: "false"
-      ENABLE_AUTOPAUSE: "false"
+      ENABLE_AUTOPAUSE: "true"
       # Aternos sometimes uses weird level names, we explicitly set it to world
       LEVEL: "world"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 8G
     volumes:
       - ./data:/data
     restart: unless-stopped
