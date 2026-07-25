@@ -5,13 +5,13 @@ services:
     image: itzg/minecraft-server
     container_name: minecraft
     ports:
-      - "25565:25565"       # Java Edition
-      - "19132:19132/udp"   # Bedrock Edition (Geyser)
+      - "25565:25565"
+      - "19132:19132/udp"
     environment:
       EULA: "TRUE"
       TYPE: "PAPER"
       VERSION: "1.21.1"
-      MEMORY: "4G"
+      MEMORY: "16G"
       MAX_PLAYERS: "10"
       MODRINTH_PROJECTS: "geyser,viaversion,viabackwards,viarewind"
       MODRINTH_ALLOWED_VERSION_TYPE: "beta"
