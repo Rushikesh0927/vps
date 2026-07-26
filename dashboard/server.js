@@ -261,6 +261,32 @@ app.post('/api/minecraft/properties', authenticateUser, (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/api/minecraft/players/all', authenticateUser, (req, res) => {
+    try {
+        const cacheFile = path.join(DATA_DIR, 'usercache.json');
+        if (!fs.existsSync(cacheFile)) return res.json([]);
+        const allPlayers = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+        if (!Array.isArray(allPlayers)) return res.json([]);
+
+        const getList = (listName) => {
+            const p = path.join(DATA_DIR, `${listName}.json`);
+            if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+            return [];
+        };
+        const ops = getList('ops');
+        const whitelist = getList('whitelist');
+        const banned = getList('banned-players');
+
+        const enriched = allPlayers.map(p => ({
+            ...p,
+            op: !!ops.find(o => o.uuid === p.uuid),
+            whitelisted: !!whitelist.find(w => w.uuid === p.uuid),
+            banned: !!banned.find(b => b.uuid === p.uuid)
+        }));
+        res.json(enriched);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/minecraft/players/:type', authenticateUser, (req, res) => {
     const type = req.params.type;
     const valid = ['whitelist', 'ops', 'banned-players'];
@@ -284,30 +310,6 @@ app.post('/api/minecraft/players/:type', authenticateUser, (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/minecraft/players/all', authenticateUser, (req, res) => {
-    try {
-        const cacheFile = path.join(DATA_DIR, 'usercache.json');
-        if (!fs.existsSync(cacheFile)) return res.json([]);
-        const allPlayers = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-
-        const getList = (listName) => {
-            const p = path.join(DATA_DIR, `${listName}.json`);
-            if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
-            return [];
-        };
-        const ops = getList('ops');
-        const whitelist = getList('whitelist');
-        const banned = getList('banned-players');
-
-        const enriched = allPlayers.map(p => ({
-            ...p,
-            op: !!ops.find(o => o.uuid === p.uuid),
-            whitelisted: !!whitelist.find(w => w.uuid === p.uuid),
-            banned: !!banned.find(b => b.uuid === p.uuid)
-        }));
-        res.json(enriched);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
 
 app.post('/api/minecraft/player/:name/control', authenticateUser, (req, res) => {
     const { name } = req.params;

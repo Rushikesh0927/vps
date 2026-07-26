@@ -1488,3 +1488,38 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; line-height: 1.15; letter-spacing: -0
 .mc-save-status.saved  { color: var(--green); }
 .mc-save-status.saving { color: var(--amber); }
 .mc-save-status.error  { color: var(--red); }
+
+/* ════════════════════════════════════════════════════════════════
+   CONSOLE INPUT & OPTIONS FIX
+   ════════════════════════════════════════════════════════════════ */
+.mc-terminal-input {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  margin-top: 12px;
+  gap: 12px;
+}
+.mc-terminal-input span {
+  color: var(--violet);
+  font-weight: bold;
+}
+.mc-terminal-input input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.mc-terminal-input input::placeholder {
+  color: var(--text-muted);
+}
+.mc-prop-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}

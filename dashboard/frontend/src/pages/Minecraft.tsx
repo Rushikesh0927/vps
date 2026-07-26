@@ -1057,7 +1057,7 @@ function OptionsTab() {
                         ) : isGamemode && p.key !== 'force-gamemode' ? (
                           <select 
                             value={p.value} onChange={e => setPropValue(p.key, e.target.value)}
-                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4 }}
+                            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4 }}
                           >
                             <option value="survival">Survival</option>
                             <option value="creative">Creative</option>
@@ -1067,7 +1067,7 @@ function OptionsTab() {
                         ) : isDifficulty ? (
                           <select 
                             value={p.value} onChange={e => setPropValue(p.key, e.target.value)}
-                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4 }}
+                            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4 }}
                           >
                             <option value="peaceful">Peaceful</option>
                             <option value="easy">Easy</option>
@@ -1078,7 +1078,7 @@ function OptionsTab() {
                           <input 
                             className="mc-prop-val" value={p.value}
                             onChange={e => setPropValue(p.key, e.target.value)} 
-                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4, width: 120, textAlign: 'right' }}
+                            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4, width: 120, textAlign: 'right' }}
                           />
                         )}
                       </div>
