@@ -552,7 +552,7 @@ function PlayersTab() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Health & XP */}
             <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
-              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Health and experience</h3>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)' }}>Health and experience</h4>
               {loadingStats ? <div className="shimmer" style={{ height: 60 }} /> : (
                 <>
                   <div style={{ marginBottom: 12 }}>
@@ -587,7 +587,7 @@ function PlayersTab() {
 
             {/* Inventory */}
             <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
-              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Inventory</h3>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)' }}>Inventory</h4>
               {loadingStats ? <div className="shimmer" style={{ height: 200 }} /> : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 4, background: '#1c1c28', padding: 8, borderRadius: 8 }}>
                   {Array.from({ length: 36 }).map((_, i) => {
@@ -634,7 +634,7 @@ function PlayersTab() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Control */}
             <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
-              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Control</h3>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)' }}>Control</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
                   { label: 'Whitelisted', key: 'whitelisted', list: 'whitelist' },
@@ -668,7 +668,7 @@ function PlayersTab() {
 
             {/* Information */}
             <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
-              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Information</h3>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)' }}>Information</h4>
               {loadingStats ? <div className="shimmer" style={{ height: 60 }} /> : (
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Current position</div>

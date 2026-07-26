@@ -372,9 +372,9 @@ app.get('/api/minecraft/player/:name/stats', authenticateUser, async (req, res) 
         // Extract inventory (including armor/offhand)
         const invRaw = val.Inventory ? val.Inventory.value.value : [];
         const inventory = invRaw.map(item => ({
-            slot: item.Slot.value,
-            id: item.id.value,
-            count: item.Count.value
+            slot: item.Slot?.value ?? 0,
+            id: item.id?.value ?? '',
+            count: item.count?.value ?? item.Count?.value ?? 0
         }));
         // Extract stats from JSON if it exists
         const statsFile = path.join(DATA_DIR, 'world', 'stats', `${uuid}.json`);
@@ -393,6 +393,7 @@ app.get('/api/minecraft/player/:name/stats', authenticateUser, async (req, res) 
             stats: gameStats
         });
     } catch (err) {
+        console.error('Stats endpoint error:', err);
         res.status(500).json({ error: err.message });
     }
 });
