@@ -635,6 +635,10 @@ app.use((req, res) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
         return res.status(404).json({ error: 'Not found' });
     }
+    // Prevent browser caching of index.html
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
 });
 

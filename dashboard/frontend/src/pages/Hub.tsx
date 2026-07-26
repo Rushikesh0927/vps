@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import {
-  Activity, ArrowUpRight, Cpu, HardDrive, LogOut, MemoryStick, Server, Sparkles,
+  Activity, ArrowUpRight, Cpu, HardDrive, LogOut, MemoryStick, Server,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,9 @@ import Ambient from '../components/Ambient';
 import SpotlightCard from '../components/SpotlightCard';
 import Ticker from '../components/Ticker';
 import { LiveDot, Meter } from '../components/Live';
+import TiltCard from '../components/TiltCard';
+import { Skeleton } from '../components/Skeleton';
+import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 
 interface Container {
   name: string; state: string; status: string; image: string;
@@ -76,9 +79,9 @@ export default function Hub() {
   const firstName = user?.name?.split(' ')[0] || 'there';
 
   const healthCards = system ? [
-    { label: 'CPU',    value: system.cpu.percent,    detail: `${system.cpu.count} host cores`,                                              Icon: Cpu        },
-    { label: 'Memory', value: system.memory.percent, detail: `${fmtBytes(system.memory.used)} / ${fmtBytes(system.memory.total)} used`,     Icon: MemoryStick },
-    { label: 'Disk',   value: system.disk.percent,   detail: `${fmtBytes(system.disk.used)} / ${fmtBytes(system.disk.total)} used`,         Icon: HardDrive   },
+    { label: 'CPU',    value: system.cpu.percent,    detail: `${system.cpu.count} host cores`,                                              Icon: Cpu,         data: [{val: system.cpu.percent}] },
+    { label: 'Memory', value: system.memory.percent, detail: `${fmtBytes(system.memory.used)} / ${fmtBytes(system.memory.total)} used`,     Icon: MemoryStick, data: [{val: system.memory.percent}] },
+    { label: 'Disk',   value: system.disk.percent,   detail: `${fmtBytes(system.disk.used)} / ${fmtBytes(system.disk.total)} used`,         Icon: HardDrive,   data: [{val: system.disk.percent}] },
   ] : [];
 
   return (
@@ -172,28 +175,46 @@ export default function Hub() {
               variants={stagger(0, 0.07)} initial="hidden" animate="show"
             >
               {healthCards.length
-                ? healthCards.map(({ label, value, detail, Icon }) => (
+                ? healthCards.map(({ label, value, detail, Icon, data }) => (
                   <motion.div key={label} variants={cardIn}>
-                    <SpotlightCard
-                      className="hub-health-card"
-                      glow="rgba(139,92,246,.14)"
-                    >
-                      <div className="hub-health-row">
-                        <span className="hub-health-icon"><Icon size={14} /></span>
-                        <span className="hub-health-label">{label}</span>
-                      </div>
-                      <div className="hub-health-val tabular">
-                        <Ticker value={value} decimals={1} suffix="%" />
-                      </div>
-                      <Meter percent={value} tone={toneFor(value)} />
-                      <p className="hub-health-detail">{detail}</p>
-                    </SpotlightCard>
+                    <TiltCard tiltAmount={8}>
+                      <SpotlightCard
+                        className="hub-health-card relative overflow-hidden"
+                        glow="rgba(139,92,246,.14)"
+                      >
+                        <div className="absolute inset-x-0 bottom-0 h-16 opacity-20 pointer-events-none">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={data}>
+                              <YAxis domain={[0, 100]} hide />
+                              <Area type="monotone" dataKey="val" stroke={toneFor(value) === 'bad' ? '#f87171' : toneFor(value) === 'warn' ? '#fbbf24' : '#34d399'} fill="url(#colorGlow)" strokeWidth={2} isAnimationActive={false} />
+                              <defs>
+                                <linearGradient id="colorGlow" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor={toneFor(value) === 'bad' ? '#f87171' : toneFor(value) === 'warn' ? '#fbbf24' : '#34d399'} stopOpacity={0.8}/>
+                                  <stop offset="95%" stopColor="transparent" stopOpacity={0}/>
+                                </linearGradient>
+                              </defs>
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="hub-health-row relative z-10">
+                          <span className="hub-health-icon"><Icon size={14} /></span>
+                          <span className="hub-health-label">{label}</span>
+                        </div>
+                        <div className="hub-health-val tabular font-mono relative z-10">
+                          <Ticker value={value} decimals={1} suffix="%" />
+                        </div>
+                        <Meter percent={value} tone={toneFor(value)} />
+                        <p className="hub-health-detail relative z-10">{detail}</p>
+                      </SpotlightCard>
+                    </TiltCard>
                   </motion.div>
                 ))
                 : (
-                  <div className="hub-health-placeholder shimmer">
-                    <Sparkles size={15} /> Reading host telemetry…
-                  </div>
+                  <>
+                    <Skeleton className="h-36 w-full" />
+                    <Skeleton className="h-36 w-full" />
+                    <Skeleton className="h-36 w-full" />
+                  </>
                 )}
             </motion.div>
           </motion.section>
@@ -222,14 +243,15 @@ export default function Hub() {
                   const isMC = c.name.toLowerCase() === 'minecraft';
                   return (
                     <motion.div key={c.name} variants={cardIn}>
-                      <SpotlightCard
-                        className="hub-service"
-                        interactive={isMC}
-                        glow={isMC ? 'rgba(139,92,246,.20)' : 'rgba(255,255,255,.05)'}
-                        onMouseEnter={() => isMC && preloadMinecraftOverview()}
-                        onFocus={()       => isMC && preloadMinecraftOverview()}
-                        onClick={isMC ? () => navigate('/minecraft') : undefined}
-                      >
+                      <TiltCard tiltAmount={5}>
+                        <SpotlightCard
+                          className="hub-service"
+                          interactive={isMC}
+                          glow={isMC ? 'rgba(139,92,246,.20)' : 'rgba(255,255,255,.05)'}
+                          onMouseEnter={() => isMC && preloadMinecraftOverview()}
+                          onFocus={()       => isMC && preloadMinecraftOverview()}
+                          onClick={isMC ? () => navigate('/minecraft') : undefined}
+                        >
                         <header>
                           <span className="hub-service-icon">{initial(c.name)}</span>
                           <span className={`hub-service-status ${on ? 'online' : 'offline'}`}>
@@ -258,15 +280,17 @@ export default function Hub() {
                             : <span>{c.status}</span>}
                         </footer>
                       </SpotlightCard>
-                    </motion.div>
+                    </TiltCard>
+                  </motion.div>
                   );
                 })}
               </motion.div>
             )
             : (
-              <div className="hub-services-loading">
-                <Sparkles size={16} />
-                <span>Finding your services…</span>
+              <div className="flex gap-4">
+                <Skeleton className="h-48 w-64" />
+                <Skeleton className="h-48 w-64" />
+                <Skeleton className="h-48 w-64" />
               </div>
             )}
         </motion.section>

@@ -11,6 +11,7 @@ import {
 import {
   Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
   getCachedMinecraftOverview,
@@ -127,14 +128,19 @@ export default function Minecraft() {
   const power = async (action: 'start' | 'stop') => {
     setPowerBusy(true);
     try {
-      await fetch('/api/power', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+      const res = await fetch('/api/power', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+      if (!res.ok) throw new Error('Failed to ' + action);
+      toast.success(`Server ${action} command sent`);
       setTimeout(() => void refresh(), 900);
+    } catch (err: any) {
+      toast.error(err.message);
     } finally { setPowerBusy(false); }
   };
 
   const copyIp = (ip: string) => {
     void navigator.clipboard.writeText(ip);
     setCopied(true); setTimeout(() => setCopied(false), 1600);
+    toast.success('IP address copied to clipboard');
   };
 
   const sendCmd = (cmd: string) => {
