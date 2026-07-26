@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity, ArrowLeft, Check, ChevronRight, Clock3, Copy, Cpu,
   Database, File, FileText, Folder, Gamepad2, HardDrive, MemoryStick,
-  MinusCircle, Play, Plus, RefreshCw, Save, Shield, Square, Terminal,
+  Play, RefreshCw, Save, Square, Terminal,
   Trash2, Upload, Users,
 } from 'lucide-react';
 import {
@@ -27,7 +27,7 @@ import { LiveDot } from '../components/Live';
 /* ─── Types ─────────────────────────────────────────────────── */
 type Tab = 'overview' | 'console' | 'players' | 'files' | 'backups' | 'options';
 interface Pt { time: string; cpu: number; memory: number; }
-interface PlayerEntry { uuid: string; name: string; }
+
 interface FileEntry { name: string; isDir: boolean; size: number; }
 interface BackupEntry { name: string; size: number; modified: string; }
 
@@ -481,119 +481,236 @@ function ConsoleTab({ logs, logsEnd, wsConnected, sendCmd }: {
 /* ════════════════════════════════════════════════════════════════
    PLAYERS TAB
    ════════════════════════════════════════════════════════════════ */
-type PlayerListType = 'whitelist' | 'ops' | 'banned-players';
+type AllPlayerEntry = { name: string; uuid: string; op: boolean; whitelisted: boolean; banned: boolean; };
 
 function PlayersTab() {
-  const [activeList, setActiveList] = useState<PlayerListType>('whitelist');
-  const [players,    setPlayers]    = useState<Record<PlayerListType, PlayerEntry[]>>({
-    whitelist: [], ops: [], 'banned-players': [],
-  });
-  const [loading, setLoading]   = useState(true);
-  const [addName, setAddName]   = useState('');
-  const [saving,  setSaving]    = useState(false);
+  const [players, setPlayers] = useState<AllPlayerEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPlayer, setSelectedPlayer] = useState<AllPlayerEntry | null>(null);
+  const [playerStats, setPlayerStats] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
-  const load = useCallback(async (type: PlayerListType) => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch(`/api/minecraft/players/${type}`);
-      const d = await r.json();
-      setPlayers(prev => ({ ...prev, [type]: Array.isArray(d) ? d : [] }));
-    } catch { /* keep empty */ }
-    finally { setLoading(false); }
+      const r = await fetch('/api/minecraft/players/all');
+      setPlayers(await r.json());
+    } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void load(activeList); }, [activeList, load]);
+  useEffect(() => { void load(); }, [load]);
 
-  const save = async (type: PlayerListType, list: PlayerEntry[]) => {
-    setSaving(true);
+  const selectPlayer = async (p: AllPlayerEntry) => {
+    setSelectedPlayer(p);
+    setLoadingStats(true);
+    setPlayerStats(null);
     try {
-      await fetch(`/api/minecraft/players/${type}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(list),
+      const r = await fetch(`/api/minecraft/player/${p.name}/stats`);
+      if (r.ok) setPlayerStats(await r.json());
+    } catch { toast.error('Failed to load stats'); }
+    finally { setLoadingStats(false); }
+  };
+
+  const toggleControl = async (list: 'ops' | 'whitelist' | 'banned-players', action: 'add' | 'remove', p: AllPlayerEntry) => {
+    try {
+      await fetch(`/api/minecraft/player/${p.name}/control`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ list, action })
       });
-      setPlayers(prev => ({ ...prev, [type]: list }));
-    } finally { setSaving(false); }
+      toast.success(`Updated ${list} for ${p.name}`);
+      await load();
+      if (selectedPlayer && selectedPlayer.name === p.name) {
+        setSelectedPlayer({
+          ...p,
+          op: list === 'ops' ? action === 'add' : p.op,
+          whitelisted: list === 'whitelist' ? action === 'add' : p.whitelisted,
+          banned: list === 'banned-players' ? action === 'add' : p.banned
+        });
+      }
+    } catch { toast.error('Failed to update control'); }
   };
 
-  const addPlayer = () => {
-    const name = addName.trim();
-    if (!name) return;
-    const list = players[activeList];
-    if (list.find(p => p.name.toLowerCase() === name.toLowerCase())) return;
-    const updated = [...list, { uuid: '', name }];
-    setAddName('');
-    void save(activeList, updated);
-  };
+  if (selectedPlayer) {
+    return (
+      <motion.section variants={pageIn} initial="hidden" animate="show" exit="exit">
+        <div className="mc-page-heading">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button className="btn" onClick={() => setSelectedPlayer(null)} style={{ padding: 8 }}>
+              <ArrowLeft size={16} />
+            </button>
+            <div>
+              <span>Player details</span>
+              <h1 style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <img src={`https://crafatar.com/avatars/${selectedPlayer.uuid || selectedPlayer.name}?size=32`} style={{ borderRadius: 4 }} alt="" />
+                {selectedPlayer.name}
+              </h1>
+            </div>
+          </div>
+        </div>
 
-  const removePlayer = (name: string) => {
-    const updated = players[activeList].filter(p => p.name !== name);
-    void save(activeList, updated);
-  };
+        <div className="mc-player-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, marginTop: 20 }}>
+          {/* Left Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Health & XP */}
+            <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
+              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Health and experience</h3>
+              {loadingStats ? <div className="shimmer" style={{ height: 60 }} /> : (
+                <>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                      <span>Level {playerStats?.xp || 0}</span>
+                    </div>
+                    <div style={{ height: 8, background: '#1c1c28', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ width: '50%', height: '100%', background: '#10b981' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 20 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Health: {Math.round(playerStats?.health || 0)} / 20</div>
+                      <div style={{ display: 'flex', gap: 2 }}>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <div key={i} style={{ width: 12, height: 12, background: i < (playerStats?.health || 0) / 2 ? '#ef4444' : '#3f3f46', borderRadius: 2 }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Food: {Math.round(playerStats?.food || 0)} / 20</div>
+                      <div style={{ display: 'flex', gap: 2 }}>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <div key={i} style={{ width: 12, height: 12, background: i < (playerStats?.food || 0) / 2 ? '#eab308' : '#3f3f46', borderRadius: 2 }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </SpotlightCard>
 
-  const LIST_LABELS: Record<PlayerListType, string> = {
-    whitelist: 'Whitelist', ops: 'Operators', 'banned-players': 'Banned Players',
-  };
+            {/* Inventory */}
+            <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
+              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Inventory</h3>
+              {loadingStats ? <div className="shimmer" style={{ height: 200 }} /> : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 4, background: '#1c1c28', padding: 8, borderRadius: 8 }}>
+                  {Array.from({ length: 36 }).map((_, i) => {
+                    const slot = i < 9 ? i : i + 27; // Map 0-8 to hotbar, 9-35 to main inventory
+                    const item = playerStats?.inventory?.find((it: any) => it.slot === slot);
+                    return (
+                      <div key={i} style={{ aspectRatio: '1', background: '#27273a', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                        {item && <img src={`https://minecraft-api.com/api/items/${item.id.replace('minecraft:', '')}/50/`} style={{ width: 24, height: 24 }} alt="" onError={e => (e.currentTarget.style.display = 'none')} />}
+                        {item && item.count > 1 && <span style={{ position: 'absolute', bottom: 2, right: 4, fontSize: 10, color: 'white', textShadow: '1px 1px 0 #000' }}>{item.count}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </SpotlightCard>
+            
+            {/* Stats */}
+            <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
+              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Statistics</h3>
+              {loadingStats ? <div className="shimmer" style={{ height: 100 }} /> : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Playtime</div>
+                    <div style={{ fontSize: 16, fontWeight: 500 }}>
+                      {playerStats?.stats?.['minecraft:custom']?.['minecraft:play_time'] 
+                        ? `${Math.floor((playerStats.stats['minecraft:custom']['minecraft:play_time'] / 20) / 3600)} hours`
+                        : 'Unknown'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Distance Travelled</div>
+                    <div style={{ fontSize: 16, fontWeight: 500 }}>
+                      {playerStats?.stats?.['minecraft:custom']?.['minecraft:walk_one_cm']
+                        ? `${Math.floor(playerStats.stats['minecraft:custom']['minecraft:walk_one_cm'] / 100000)} km`
+                        : 'Unknown'}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </SpotlightCard>
+          </div>
+
+          {/* Right Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Control */}
+            <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
+              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Control</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  { label: 'Whitelisted', key: 'whitelisted', list: 'whitelist' },
+                  { label: 'Banned', key: 'banned', list: 'banned-players' },
+                  { label: 'Operator', key: 'op', list: 'ops' }
+                ].map(({ label, key, list }) => (
+                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1c1c28', padding: '10px 16px', borderRadius: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Users size={14} />
+                      <span style={{ fontSize: 13 }}>{label}</span>
+                    </div>
+                    <button 
+                      className={`mc-toggle ${(selectedPlayer as any)[key] ? 'on' : 'off'}`}
+                      onClick={() => toggleControl(list as any, (selectedPlayer as any)[key] ? 'remove' : 'add', selectedPlayer)}
+                      style={{ 
+                        width: 40, height: 24, borderRadius: 12, border: 'none',
+                        background: (selectedPlayer as any)[key] ? '#10b981' : '#ef4444', 
+                        position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
+                      }}
+                    >
+                      <span style={{ 
+                        position: 'absolute', top: 2, left: (selectedPlayer as any)[key] ? 18 : 2, 
+                        width: 20, height: 20, borderRadius: '50%', background: 'white', 
+                        transition: 'left 0.2s' 
+                      }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </SpotlightCard>
+
+            {/* Information */}
+            <SpotlightCard className="mc-detail-card" glow="rgba(255,255,255,0.05)">
+              <h3 style={{ marginBottom: 16, color: 'var(--text-bright)' }}>Information</h3>
+              {loadingStats ? <div className="shimmer" style={{ height: 60 }} /> : (
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Current position</div>
+                  <div style={{ fontSize: 13, fontFamily: 'monospace' }}>
+                    X: {Math.round(playerStats?.position?.x || 0)} Y: {Math.round(playerStats?.position?.y || 0)} Z: {Math.round(playerStats?.position?.z || 0)}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>{playerStats?.dimension}</div>
+                </div>
+              )}
+            </SpotlightCard>
+          </div>
+        </div>
+      </motion.section>
+    );
+  }
 
   return (
     <motion.section variants={pageIn} initial="hidden" animate="show" exit="exit">
       <div className="mc-page-heading">
-        <div><span>Access control</span><h1>Player management</h1></div>
+        <div><span>Access control</span><h1>Players</h1></div>
       </div>
 
-      {/* list selector */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {(['whitelist', 'ops', 'banned-players'] as PlayerListType[]).map(type => (
-          <motion.button key={type}
-            className={activeList === type ? 'btn btn-primary' : 'btn'}
-            onClick={() => setActiveList(type)}
-            whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }} transition={spring.press}
-            style={{ fontSize: 12 }}>
-            {type === 'whitelist' && <Shield size={12} />}
-            {type === 'ops' && <Users size={12} />}
-            {type === 'banned-players' && <MinusCircle size={12} />}
-            {LIST_LABELS[type]}
-          </motion.button>
-        ))}
-      </div>
-
-      <motion.div className="mc-players-page" variants={stagger(0, 0.06)} initial="hidden" animate="show">
-        <motion.div className="mc-players-panel" variants={cardIn}>
-          <div className="mc-players-panel-head">
-            <h3>{LIST_LABELS[activeList]}</h3>
-            <span>{players[activeList].length} {players[activeList].length === 1 ? 'player' : 'players'}</span>
-          </div>
-          <div className="mc-players-add">
-            <input
-              value={addName}
-              onChange={e => setAddName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addPlayer()}
-              placeholder={`Add player to ${LIST_LABELS[activeList].toLowerCase()}…`}
-            />
-            <motion.button className="btn btn-primary" onClick={addPlayer} disabled={saving || !addName.trim()}
-              whileHover={{ y: -1 }} whileTap={{ scale: 0.96 }} transition={spring.press}
-              style={{ gap: 6 }}>
-              <Plus size={13} /> Add
-            </motion.button>
-          </div>
-          <div className="mc-player-list">
-            {loading
-              ? <div className="mc-players-empty">Loading…</div>
-              : players[activeList].length === 0
-                ? <div className="mc-players-empty">No players in this list.</div>
-                : players[activeList].map(p => (
-                  <div key={p.name} className="mc-player-row">
-                    <div className="mc-player-avatar">{p.name.charAt(0).toUpperCase()}</div>
-                    <div>
-                      <div className="mc-player-name">{p.name}</div>
-                      {p.uuid && <div className="mc-player-uuid">{p.uuid}</div>}
-                    </div>
-                    <button className="mc-player-remove" onClick={() => removePlayer(p.name)} aria-label={`Remove ${p.name}`}>
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-          </div>
-        </motion.div>
-      </motion.div>
+      {loading ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-dim)' }}>Loading players…</div>
+      ) : (
+        <div className="mc-players-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
+          {players.map(p => (
+            <SpotlightCard key={p.name} className="mc-player-card" glow="rgba(255,255,255,0.05)">
+              <div 
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '12px 16px', background: '#1c1c28', borderRadius: 8, border: '1px solid var(--border)' }}
+                onClick={() => selectPlayer(p)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <img src={`https://crafatar.com/avatars/${p.uuid || p.name}?size=24`} style={{ borderRadius: 4 }} alt="" />
+                  <span style={{ fontWeight: 500 }}>{p.name}</span>
+                </div>
+                <ChevronRight size={16} style={{ color: 'var(--text-dim)' }} />
+              </div>
+            </SpotlightCard>
+          ))}
+        </div>
+      )}
     </motion.section>
   );
 }
@@ -723,8 +840,11 @@ function FilesTab() {
                   </motion.button>
                 </div>
               </div>
-              <textarea value={content} onChange={e => setContent(e.target.value)}
-                spellCheck={false} style={{ flex: 1 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 400 }}>
+                <textarea value={content} onChange={e => setContent(e.target.value)}
+                  spellCheck={false}
+                  style={{ flex: 1, resize: 'none', border: 0, outline: 0, background: '#0c0c14', color: '#c4c2d4', font: '12px/1.8 "JetBrains Mono", monospace', padding: 20, width: '100%' }} />
+              </div>
             </>
           ) : (
             <div className="mc-file-empty">
@@ -908,14 +1028,64 @@ function OptionsTab() {
                 <h3>Server properties</h3>
                 <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{props.length} settings</span>
               </div>
-              <div className="mc-options-properties">
-                {sorted.map(p => (
-                  <div key={p.key} className="mc-prop-row">
-                    <span className="mc-prop-key">{p.key}</span>
-                    <input className="mc-prop-val" value={p.value}
-                      onChange={e => setPropValue(p.key, e.target.value)} />
-                  </div>
-                ))}
+              <div className="mc-options-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+                {sorted.map(p => {
+                  const isBool = p.value === 'true' || p.value === 'false';
+                  const isGamemode = p.key === 'gamemode' || p.key === 'force-gamemode';
+                  const isDifficulty = p.key === 'difficulty';
+                  
+                  return (
+                    <SpotlightCard key={p.key} className="mc-prop-card" glow="rgba(255,255,255,0.05)">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span className="mc-prop-key" style={{ fontWeight: 600, color: 'var(--text-bright)' }}>{p.key.replace(/-/g, ' ')}</span>
+                        {isBool ? (
+                          <button 
+                            className={`mc-toggle ${p.value === 'true' ? 'on' : 'off'}`}
+                            onClick={() => setPropValue(p.key, p.value === 'true' ? 'false' : 'true')}
+                            style={{ 
+                              width: 40, height: 24, borderRadius: 12, border: 'none',
+                              background: p.value === 'true' ? '#10b981' : '#ef4444', 
+                              position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
+                            }}
+                          >
+                            <span style={{ 
+                              position: 'absolute', top: 2, left: p.value === 'true' ? 18 : 2, 
+                              width: 20, height: 20, borderRadius: '50%', background: 'white', 
+                              transition: 'left 0.2s' 
+                            }} />
+                          </button>
+                        ) : isGamemode && p.key !== 'force-gamemode' ? (
+                          <select 
+                            value={p.value} onChange={e => setPropValue(p.key, e.target.value)}
+                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4 }}
+                          >
+                            <option value="survival">Survival</option>
+                            <option value="creative">Creative</option>
+                            <option value="adventure">Adventure</option>
+                            <option value="spectator">Spectator</option>
+                          </select>
+                        ) : isDifficulty ? (
+                          <select 
+                            value={p.value} onChange={e => setPropValue(p.key, e.target.value)}
+                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4 }}
+                          >
+                            <option value="peaceful">Peaceful</option>
+                            <option value="easy">Easy</option>
+                            <option value="normal">Normal</option>
+                            <option value="hard">Hard</option>
+                          </select>
+                        ) : (
+                          <input 
+                            className="mc-prop-val" value={p.value}
+                            onChange={e => setPropValue(p.key, e.target.value)} 
+                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', borderRadius: 4, width: 120, textAlign: 'right' }}
+                          />
+                        )}
+                      </div>
+                      <small style={{ color: 'var(--text-dim)', fontSize: 10, fontFamily: 'monospace' }}>{p.key}={p.value}</small>
+                    </SpotlightCard>
+                  );
+                })}
               </div>
             </>
           ) : (

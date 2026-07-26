@@ -284,6 +284,64 @@ app.post('/api/minecraft/players/:type', authenticateUser, (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/api/minecraft/players/all', authenticateUser, (req, res) => {
+    try {
+        const cacheFile = path.join(DATA_DIR, 'usercache.json');
+        if (!fs.existsSync(cacheFile)) return res.json([]);
+        const allPlayers = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+
+        const getList = (listName) => {
+            const p = path.join(DATA_DIR, `${listName}.json`);
+            if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+            return [];
+        };
+        const ops = getList('ops');
+        const whitelist = getList('whitelist');
+        const banned = getList('banned-players');
+
+        const enriched = allPlayers.map(p => ({
+            ...p,
+            op: !!ops.find(o => o.uuid === p.uuid),
+            whitelisted: !!whitelist.find(w => w.uuid === p.uuid),
+            banned: !!banned.find(b => b.uuid === p.uuid)
+        }));
+        res.json(enriched);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/minecraft/player/:name/control', authenticateUser, (req, res) => {
+    const { name } = req.params;
+    const { list, action } = req.body; // list: ops, whitelist, banned-players. action: add, remove
+    try {
+        const valid = ['whitelist', 'ops', 'banned-players'];
+        if (!valid.includes(list)) return res.status(400).json({ error: 'Invalid list' });
+
+        const cacheFile = path.join(DATA_DIR, 'usercache.json');
+        let uuid = '';
+        if (fs.existsSync(cacheFile)) {
+            const cache = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+            const entry = cache.find(p => p.name.toLowerCase() === name.toLowerCase());
+            if (entry) uuid = entry.uuid;
+        }
+        
+        const listFile = path.join(DATA_DIR, `${list}.json`);
+        let listData = [];
+        if (fs.existsSync(listFile)) {
+            listData = JSON.parse(fs.readFileSync(listFile, 'utf8'));
+        }
+
+        const exists = listData.find(p => p.name.toLowerCase() === name.toLowerCase());
+        
+        if (action === 'add' && !exists) {
+            listData.push({ uuid, name, level: 4, bypassesPlayerLimit: false }); // Defaults for ops
+        } else if (action === 'remove' && exists) {
+            listData = listData.filter(p => p.name.toLowerCase() !== name.toLowerCase());
+        }
+        fs.writeFileSync(listFile, JSON.stringify(listData, null, 2));
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/minecraft/player/:name/stats', authenticateUser, async (req, res) => {
     const name = req.params.name;
     try {
@@ -316,13 +374,21 @@ app.get('/api/minecraft/player/:name/stats', authenticateUser, async (req, res) 
             id: item.id.value,
             count: item.Count.value
         }));
-        
+        // Extract stats from JSON if it exists
+        const statsFile = path.join(DATA_DIR, 'world', 'stats', `${uuid}.json`);
+        let gameStats = {};
+        if (fs.existsSync(statsFile)) {
+            const rawStats = JSON.parse(fs.readFileSync(statsFile, 'utf8'));
+            gameStats = rawStats.stats || {};
+        }
+
         res.json({
             uuid, name,
             dimension: dim,
             position: { x: pos[0], y: pos[1], z: pos[2] },
             health, food, xp,
-            inventory
+            inventory,
+            stats: gameStats
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
