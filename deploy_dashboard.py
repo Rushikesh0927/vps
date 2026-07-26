@@ -11,14 +11,16 @@ with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             file_path = os.path.join(root, file)
             zipf.write(file_path, arcname=os.path.relpath(file_path, 'dashboard'))
 
-# Connect
+# Connect via SSH key
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect('100.71.55.44', username='rushi', password='rushi1928')
+key_path = os.path.expanduser('~/.ssh/id_ed25519')
+key = paramiko.Ed25519Key.from_private_key_file(key_path)
+ssh.connect('18.141.194.48', username='ubuntu', pkey=key)
 
 def run(cmd):
     print(f"\n[VPS] {cmd}")
-    stdin, stdout, stderr = ssh.exec_command(f"echo rushi1928 | sudo -S sh -c '{cmd}'", timeout=120)
+    stdin, stdout, stderr = ssh.exec_command(f"sudo sh -c '{cmd}'", timeout=120)
     out = stdout.read().decode('utf-8', errors='ignore').strip()
     err = stderr.read().decode('utf-8', errors='ignore').strip()
     if out: print(out.encode('ascii', errors='ignore').decode())
@@ -27,16 +29,16 @@ def run(cmd):
 # Upload zip
 print("Uploading...")
 sftp = ssh.open_sftp()
-sftp.put(zip_path, '/home/rushi/dashboard.zip')
+sftp.put(zip_path, '/home/ubuntu/dashboard.zip')
 sftp.close()
 
 # Deploy
 run("rm -rf /opt/vps-infra/docker/compose/dashboard")
 run("mkdir -p /opt/vps-infra/docker/compose/dashboard")
-run("unzip -o /home/rushi/dashboard.zip -d /opt/vps-infra/docker/compose/dashboard")
-run("rm /home/rushi/dashboard.zip")
+run("unzip -qo /home/ubuntu/dashboard.zip -d /opt/vps-infra/docker/compose/dashboard")
+run("rm /home/ubuntu/dashboard.zip")
 
-# Write docker-compose.yml
+# Write docker-compose.yml with Google OAuth env vars
 compose_content = """services:
   dashboard:
     build: .
@@ -45,17 +47,29 @@ compose_content = """services:
     ports:
       - "80:8080"
     environment:
-      - ADMIN_PASSWORD=rushiadmin
-      - FRIENDS_PIN=1928
-      - SERVER_IP=172.17.0.1
-      - DISPLAY_IP=rushiserver.duckdns.org:9508
-      - BEDROCK_IP=qgv7kxef0w.localto.net:3383
+      - GOOGLE_CLIENT_ID=304614120206-a73vv8trajdq5fihhpb154k9b12ehmia.apps.googleusercontent.com
+      - ADMIN_EMAIL=yemularushikesh555@gmail.com
+      - JWT_SECRET=supersecrethydrakey2026
+      - SERVER_IP=minecraft
+      - DISPLAY_IP=18.141.194.48:25565
+      - BEDROCK_IP=18.141.194.48:19132
       - DATA_DIR=/data
+      - USERDATA_DIR=/app/userdata
       - RCLONE_CONFIG=/root/.config/rclone/rclone.conf
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/vps-infra/docker/compose/minecraft/data:/data
-      - /home/rushi/.config/rclone:/root/.config/rclone:ro
+      - /home/ubuntu/.config/rclone:/root/.config/rclone:ro
+      - dashboard_userdata:/app/userdata
+    networks:
+      - default
+      - minecraft_net
+networks:
+  minecraft_net:
+    external: true
+    name: minecraft_default
+volumes:
+  dashboard_userdata:
 """
 
 # Write compose file locally then upload
@@ -63,19 +77,19 @@ with open('_tmp_compose.yml', 'w') as f:
     f.write(compose_content)
 
 sftp = ssh.open_sftp()
-sftp.put('_tmp_compose.yml', '/home/rushi/docker-compose.yml')
+sftp.put('_tmp_compose.yml', '/home/ubuntu/docker-compose.yml')
 sftp.close()
 
-run("mv /home/rushi/docker-compose.yml /opt/vps-infra/docker/compose/dashboard/docker-compose.yml")
+run("mv /home/ubuntu/docker-compose.yml /opt/vps-infra/docker/compose/dashboard/docker-compose.yml")
 
 # Build and start
 run("cd /opt/vps-infra/docker/compose/dashboard && docker compose up -d --build --force-recreate")
 
 # Verify
 run("docker ps")
-run("sleep 2 && curl -s -o /dev/null -w '%{http_code}' http://localhost:80")
+run("sleep 3 && curl -s -o /dev/null -w '%{http_code}' http://localhost:80 || true")
 
 ssh.close()
 os.remove(zip_path)
 os.remove('_tmp_compose.yml')
-print("\nDashboard v2 deployed!")
+print("\nDashboard deployed!")
