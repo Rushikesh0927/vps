@@ -17,6 +17,7 @@ if [ -d "/opt/vps-infra" ]; then
         "/opt/vps-infra/docker/compose/example"
         "/opt/vps-infra/docker/compose/friends"
         "/opt/vps-infra/docker/compose/cloudflared"
+        "/opt/vps-infra/docker/compose/cloudflared-ycp"
         "/opt/vps-infra/hari"
         "/opt/vps-infra/OpenWA"
         "/opt/vps-infra/dashboard"

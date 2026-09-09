@@ -1,0 +1,7 @@
+services:
+  cloudflared-ycp:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-ycp
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token eyJhIjoiOTFkODA3OTEzYTNhYTUyZDNhOThlY2ZiMmMzOWYzNzMiLCJ0IjoiZTYyY2FjMWItZjE1Zi00Nzk0LTg2ZTMtM2ZjZjg0ZjY4OWRjIiwicyI6Ik1qWTBNelE0T1RZdE16WmhNeTAwTWpObUxXSXhZekF0WW1aaE5tWmtNR0ZpTVRBMyJ9
+    network_mode: host
