@@ -5,9 +5,20 @@ services:
     restart: unless-stopped
     ports:
       - "80:8080"
+    environment:
+      - GOOGLE_CLIENT_ID=304614120206-a73vv8trajdq5fihhpb154k9b12ehmia.apps.googleusercontent.com
+      - ADMIN_EMAIL=yemularushikesh555@gmail.com
+      - JWT_SECRET=supersecrethydrakey2026
+      - SERVER_IP=minecraft
+      - DISPLAY_IP=103.165.11.193:25565
+      - BEDROCK_IP=103.165.11.193:19132
+      - DATA_DIR=/data
+      - USERDATA_DIR=/app/userdata
+      - RCLONE_CONFIG=/root/.config/rclone/rclone.conf
     volumes:
-      - dashboard_data:/app/userdata
       - /var/run/docker.sock:/var/run/docker.sock
+      - /root/.config/rclone:/root/.config/rclone:ro
+      - dashboard_data:/app/userdata
 
 volumes:
   dashboard_data:

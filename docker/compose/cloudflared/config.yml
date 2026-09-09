@@ -2,8 +2,6 @@ tunnel: 12f1049c-b857-4c09-8c34-9deadaa16898
 ingress:
   - hostname: rushi-vps.me
     service: http://localhost:80
-  - hostname: snap-n-wrap.store
-    service: http://localhost:3001
-  - hostname: www.snap-n-wrap.store
-    service: http://localhost:3001
+  - hostname: portainer.rushi-vps.me
+    service: http://localhost:9000
   - service: http_status:404
