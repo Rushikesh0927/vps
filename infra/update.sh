@@ -11,15 +11,23 @@ apt-get autoremove -y
 
 # Update docker containers if they exist
 echo "[*] Updating docker images..."
-if [ -d "/opt/vps-infra/docker/compose" ]; then
-    cd /opt/vps-infra/docker/compose
-    for d in */ ; do
-        if [ -f "$d/docker-compose.yml" ]; then
+if [ -d "/opt/vps-infra" ]; then
+    # We explicitly define the directories that have docker-compose.yml files
+    COMPOSE_DIRS=(
+        "/opt/vps-infra/docker/compose/example"
+        "/opt/vps-infra/docker/compose/friends"
+        "/opt/vps-infra/docker/compose/cloudflared"
+        "/opt/vps-infra/hari"
+        "/opt/vps-infra/OpenWA"
+        "/opt/vps-infra/dashboard"
+    )
+
+    for d in "${COMPOSE_DIRS[@]}" ; do
+        if [ -d "$d" ] && [ -f "$d/docker-compose.yml" ]; then
             echo "[*] Updating compose stack in $d"
             cd "$d"
             docker compose pull
             docker compose up -d
-            cd ..
         fi
     done
 fi

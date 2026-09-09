@@ -1,0 +1,9 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run --token eyJhIjoiYWM0ZGI5NmQwMmQ3Njc5YjQ2OTNkYzE5NGM1MTc2NzkiLCJ0IjoiMTJmMTA0OWMtYjg1Ny00YzA5LThjMzQtOWRlYWRhYTE2ODk4IiwicyI6ImNtMGowWGlHVkZhNUpSWnduMnA0Tms0TjVqY3FOVXhDalFKbEFLRlFYS1k9In0=
+    network_mode: host
+    volumes:
+      - ./config.yml:/etc/cloudflared/config.yml:ro

@@ -1,0 +1,13 @@
+services:
+  dashboard:
+    build: .
+    container_name: vps-dashboard
+    restart: unless-stopped
+    ports:
+      - "80:8080"
+    volumes:
+      - dashboard_data:/app/userdata
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  dashboard_data:
