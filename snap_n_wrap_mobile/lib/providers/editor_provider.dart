@@ -80,6 +80,17 @@ class EditorNotifier extends Notifier<EditorState> {
       clearActivePhoto: state.activePhotoId == id && newPhotos.isEmpty,
     );
   }
+
+  void replaceOrAddSinglePhoto(String path) {
+    final newPhoto = PhotoEdit.initial(
+      DateTime.now().millisecondsSinceEpoch.toString(),
+      path,
+    );
+    state = state.copyWith(
+      photos: [newPhoto],
+      activePhotoId: newPhoto.id,
+    );
+  }
 }
 
 final editorProvider = NotifierProvider<EditorNotifier, EditorState>(() {
