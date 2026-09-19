@@ -11,6 +11,11 @@ class CartState {
   final String paymentMethod;
   final String? orderId;
 
+  // New fields for product context
+  final String categoryId;
+  final List<int> selectedOptions;
+  final double basePrice;
+
   CartState({
     required this.items,
     required this.addons,
@@ -19,6 +24,9 @@ class CartState {
     required this.customerDetails,
     required this.paymentMethod,
     this.orderId,
+    this.categoryId = '',
+    this.selectedOptions = const [],
+    this.basePrice = 0,
   });
 
   factory CartState.initial() {
@@ -40,6 +48,9 @@ class CartState {
     CustomerDetails? customerDetails,
     String? paymentMethod,
     String? orderId,
+    String? categoryId,
+    List<int>? selectedOptions,
+    double? basePrice,
   }) {
     return CartState(
       items: items ?? this.items,
@@ -49,6 +60,9 @@ class CartState {
       customerDetails: customerDetails ?? this.customerDetails,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       orderId: orderId ?? this.orderId,
+      categoryId: categoryId ?? this.categoryId,
+      selectedOptions: selectedOptions ?? this.selectedOptions,
+      basePrice: basePrice ?? this.basePrice,
     );
   }
 }
@@ -57,18 +71,22 @@ class CartNotifier extends Notifier<CartState> {
   @override
   CartState build() => CartState.initial();
 
-  void setItems(List<PhotoEdit> photos, PolaroidSize size) {
+  void setItems(List<PhotoEdit> photos, String categoryId, List<int> selectedOptions, double basePrice) {
     final hasText = photos.any((p) => p.texts.isNotEmpty);
     
+    // Create generic cart items without relying on PolaroidSize
     final newItems = photos.map((photo) => CartItem(
       id: photo.id,
       photo: photo,
-      size: size,
+      size: const PolaroidSize(id: 'std', label: 'Standard', width: 0, height: 0, basePrice: 0), // Dummy backward compat
       qty: photo.qty,
     )).toList();
 
     state = state.copyWith(
       items: newItems,
+      categoryId: categoryId,
+      selectedOptions: selectedOptions,
+      basePrice: basePrice,
       addons: state.addons.copyWith(customText: hasText || state.addons.customText),
     );
   }
@@ -110,11 +128,7 @@ class CartNotifier extends Notifier<CartState> {
   }
 
   double getSubtotal() {
-    double total = 0;
-    for (var item in state.items) {
-      total += getPriceForQty(item.size, item.qty);
-    }
-    return total;
+    return state.basePrice;
   }
 
   double getAddonCost() {

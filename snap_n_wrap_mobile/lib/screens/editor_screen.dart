@@ -10,6 +10,7 @@ import '../providers/cart_provider.dart';
 import '../providers/editor_provider.dart';
 import '../providers/user_provider.dart';
 import 'checkout_screen.dart';
+import 'cart_screen.dart';
 import 'edit_profile_screen.dart';
 import '../widgets/interactive_photo.dart';
 import '../data/product_config.dart';
@@ -506,10 +507,23 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           return;
                         }
                         final user = ref.read(userProvider).user;
+                        
+                        double basePrice = 0;
+                        if (id == 'photo_prints') {
+                          final qty = state.selectedOptions.length > 1 ? state.selectedOptions[1] : 1;
+                          final price = [10, 18, 25, 49, 59][state.selectedOptions[0]];
+                          basePrice = (price * qty).toDouble();
+                        } else {
+                          // Dummy base price logic for others, real price is calculated in dynamic config
+                          basePrice = 199.0;
+                        }
+                        
+                        ref.read(cartProvider.notifier).setItems(state.photos, id, state.selectedOptions, basePrice);
+                        
                         if (user != null && (user.mobile.isEmpty || user.savedAddress == null || user.savedAddress!.address.isEmpty)) {
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen(isInitialSetup: true)));
                         } else {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen()));
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
                         }
                       } : null,
                       style: ElevatedButton.styleFrom(
@@ -523,7 +537,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Proceed to Checkout', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                          Text('Add to Cart', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                           SizedBox(width: 6),
                           Icon(Icons.arrow_forward, size: 16),
                         ],
