@@ -24,7 +24,7 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
   @override
   void initState() {
     super.initState();
-    _selectedOptions = List.filled(widget.config.steps.length, null);
+    _selectedOptions = List.generate(widget.config.steps.length, (index) => 0);
     
     if (widget.initialSelection != null) {
       widget.initialSelection!.forEach((key, value) {
