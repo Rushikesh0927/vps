@@ -1,10 +1,12 @@
-﻿import 'dart:ui';
+import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../data/product_config.dart';
 import 'dynamic_configurator_screen.dart';
 import 'polaroid_configurator_screen.dart';
+import 'photo_prints_configurator.dart';
 class ProductsScreen extends ConsumerWidget {
   const ProductsScreen({super.key});
 
@@ -164,15 +166,24 @@ class ProductsScreen extends ConsumerWidget {
   Widget _buildProductItem(BuildContext context, String name, String desc, String price, IconData icon, String categoryKey, [Map<int, int>? initialSelection]) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => DynamicConfiguratorScreen(
-              config: productConfigs[categoryKey]!,
-              initialSelection: initialSelection,
+        if (categoryKey == 'photo_prints') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const PhotoPrintsConfigurator(),
             ),
-          ),
-        );
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DynamicConfiguratorScreen(
+                config: productConfigs[categoryKey]!,
+                initialSelection: initialSelection,
+              ),
+            ),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
