@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 class ConfigStep {
   final String title;
   final List<ConfigOption> options;
+  final List<ConfigOption> Function(List<int?> selected)? dynamicOptions;
 
-  ConfigStep({required this.title, required this.options});
+  ConfigStep({required this.title, this.options = const [], this.dynamicOptions});
 }
 
 class ConfigOption {
