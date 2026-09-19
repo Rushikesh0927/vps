@@ -1,76 +1,58 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/product_config.dart';
-import '../providers/editor_provider.dart';
+import '../providers/user_provider.dart';
+import 'checkout_screen.dart';
+import 'edit_profile_screen.dart';
 import 'editor_screen.dart';
+import '../providers/editor_provider.dart';
 
 class DynamicConfiguratorScreen extends ConsumerStatefulWidget {
   final ProductConfiguration config;
   final Map<int, int>? initialSelection;
 
-  const DynamicConfiguratorScreen({super.key, required this.config, this.initialSelection});
+  const DynamicConfiguratorScreen({
+    super.key,
+    required this.config,
+    this.initialSelection,
+  });
 
   @override
   ConsumerState<DynamicConfiguratorScreen> createState() => _DynamicConfiguratorScreenState();
 }
 
 class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorScreen> {
-  late List<int?> _selectedOptions;
-  double _totalPrice = 0;
-  
+  // Store selected option index for each step
+  late List<int> _selectedOptions;
 
   @override
   void initState() {
     super.initState();
+    // Default to the first option for all steps
     _selectedOptions = List.generate(widget.config.steps.length, (index) => 0);
-    
     if (widget.initialSelection != null) {
-      widget.initialSelection!.forEach((key, value) {
-        if (key < _selectedOptions.length) {
-          _selectedOptions[key] = value;
-          
+      widget.initialSelection!.forEach((stepIndex, optionIndex) {
+        if (stepIndex >= 0 &&
+            stepIndex < _selectedOptions.length &&
+            optionIndex >= 0 &&
+            optionIndex < widget.config.steps[stepIndex].options.length) {
+          _selectedOptions[stepIndex] = optionIndex;
         }
       });
-      
-    } else {
-      // If polaroid or standard, set default selections to 0 for all steps so it calculates base price immediately?
-      // Actually, if we do progressive disclosure, they must select. Let's auto-select option 0 for the very first step.
-      if (widget.config.steps.isNotEmpty) {
-        _selectedOptions[0] = 0;
-      }
     }
-    
-    _calculatePrice();
   }
 
-  void _calculatePrice() {
-    double price = widget.config.basePrice;
-    
-    // Create a temporary list of selections, falling back to 0 if null for calculation
-    List<int?> calcOptions = _selectedOptions;
-    
+  double get _totalPrice {
     if (widget.config.priceCalculator != null) {
-      price = widget.config.priceCalculator!(_selectedOptions);
-    } else {
-      for (int i = 0; i < widget.config.steps.length; i++) {
-        if (_selectedOptions[i] != null) {
-          final optionsList = widget.config.steps[i].dynamicOptions != null ? widget.config.steps[i].dynamicOptions!(_selectedOptions) : widget.config.steps[i].options;
-          price += optionsList[_selectedOptions[i]!].priceDelta;
-        } else {
-           final optionsList = widget.config.steps[i].dynamicOptions != null ? widget.config.steps[i].dynamicOptions!(_selectedOptions) : widget.config.steps[i].options;
-           price += optionsList[0].priceDelta;
-        }
-      }
+      return widget.config.priceCalculator!(_selectedOptions);
     }
-    setState(() {
-      _totalPrice = price;
-    });
-  }
-
-  bool _isAllSelected() {
-    return !_selectedOptions.contains(null);
+    double total = widget.config.basePrice;
+    for (int i = 0; i < widget.config.steps.length; i++) {
+      total += widget.config.steps[i].options[_selectedOptions[i]].priceDelta;
+    }
+    return total;
   }
 
   @override
@@ -97,40 +79,49 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
       ),
       body: Stack(
         children: [
-          // Background Image
+          // Background Image (Hero)
           Positioned(
-            top: 0, left: 0, right: 0,
+            top: 0,
+            left: 0,
+            right: 0,
             height: MediaQuery.of(context).size.height * 0.45,
-            child: ShaderMask(
-              shaderCallback: (rect) => LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.black.withOpacity(0.1), Colors.black],
-                stops: const [0.5, 1.0],
-              ).createShader(rect),
-              blendMode: BlendMode.darken,
-              child: widget.config.heroImage.startsWith('http')
-                  ? CachedNetworkImage(
-                      imageUrl: widget.config.heroImage,
-                      fit: BoxFit.cover,
-                    )
-                  : Image.asset(
-                      widget.config.heroImage,
-                      fit: BoxFit.cover,
-                    ),
+            child: widget.config.heroImage.startsWith('http')
+                ? CachedNetworkImage(
+                    imageUrl: widget.config.heroImage,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, url, error) => Container(color: const Color(0xFF111111)),
+                    placeholder: (context, url) => Container(color: const Color(0xFF1D1D1F)),
+                  )
+                : Image.asset(
+                    widget.config.heroImage,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF111111)),
+                  ),
+          ),
+          
+          // Gradient fade to black
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.2,
+            left: 0,
+            right: 0,
+            height: MediaQuery.of(context).size.height * 0.25,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black],
+                ),
+              ),
             ),
           ),
-
-          // Content
-          SafeArea(
-            bottom: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 140),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          
+          // Content Scroll View
+          Positioned.fill(
+            child: SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.only(top: 180, bottom: 120), // Leave space for hero and bottom bar
                 children: [
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-                  
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
@@ -138,7 +129,7 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
                       children: [
                         Text(
                           widget.config.categoryName,
-                          style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1.5, height: 1.1),
+                          style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, letterSpacing: -1.0),
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -147,23 +138,20 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
                         ),
                         const SizedBox(height: 48),
 
-                        // PROGRESSIVE DISCLOSURE STEPS
+                        // Dynamic Steps
                         ...List.generate(widget.config.steps.length, (stepIndex) {
-                          
-                          
                           final step = widget.config.steps[stepIndex];
-                          
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 32),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'STEP ${stepIndex + 1} — ${step.title.toUpperCase()}',
+                                  step.title,
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    letterSpacing: 2.0,
+                                    letterSpacing: 1.5,
                                     color: Colors.white.withOpacity(0.5),
                                   ),
                                 ),
@@ -171,17 +159,14 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
                                 Wrap(
                                   spacing: 12,
                                   runSpacing: 12,
-                                  children: List.generate(step.dynamicOptions != null ? step.dynamicOptions!(_selectedOptions).length : step.options.length, (optIndex) {
-                                    final optionsList = step.dynamicOptions != null ? step.dynamicOptions!(_selectedOptions) : step.options;
-                                    final option = optionsList[optIndex];
+                                  children: List.generate(step.options.length, (optIndex) {
+                                    final option = step.options[optIndex];
                                     final isSelected = _selectedOptions[stepIndex] == optIndex;
                                     
                                     return GestureDetector(
                                       onTap: () {
                                         setState(() {
                                           _selectedOptions[stepIndex] = optIndex;
-                                          
-                                          _calculatePrice();
                                         });
                                       },
                                       child: AnimatedContainer(
@@ -268,27 +253,24 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
                             ),
                           ],
                         ),
-                        ElevatedButton(
-                          onPressed: _isAllSelected() ? () {
-                            final editorNotifier = ref.read(editorProvider.notifier);
-                            editorNotifier.reset();
-                            // Cast safely
-                            final List<int> finalSelections = _selectedOptions.map((e) => e!).toList();
-                            editorNotifier.setProductContext(
-                              widget.config.categoryId, 
-                              finalSelections,
-                            );
-                            
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const EditorScreen()),
-                            );
-                          } : null,
-                          style: ElevatedButton.styleFrom(
+                      ElevatedButton(
+                        onPressed: () {
+                          // Save configuration to state or pass as arguments, then go to Editor
+                          final editorNotifier = ref.read(editorProvider.notifier);
+                          editorNotifier.reset(); // clear old state
+                          editorNotifier.setProductContext(
+                            widget.config.categoryId, 
+                            _selectedOptions,
+                          );
+                          
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const EditorScreen()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFF5A5F),
-                            disabledBackgroundColor: Colors.white.withOpacity(0.1),
                             foregroundColor: Colors.white,
-                            disabledForegroundColor: Colors.white38,
                             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             elevation: 0,

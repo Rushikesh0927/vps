@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 class ConfigStep {
   final String title;
   final List<ConfigOption> options;
-  final List<ConfigOption> Function(List<int?> selected)? dynamicOptions;
 
-  ConfigStep({required this.title, this.options = const [], this.dynamicOptions});
+  ConfigStep({required this.title, required this.options});
 }
 
 class ConfigOption {
@@ -23,7 +22,7 @@ class ProductConfiguration {
   final String heroImage;
   final double basePrice;
   final List<ConfigStep> steps;
-  final double Function(List<int?> selectedIndices)? priceCalculator;
+  final double Function(List<int> selectedIndices)? priceCalculator;
 
   ProductConfiguration({
     required this.categoryId,
@@ -45,7 +44,7 @@ final Map<String, ProductConfiguration> productConfigs = {
     basePrice: 0,
     steps: [
       ConfigStep(
-        title: 'CHOOSE SIZE',
+        title: 'STEP 1 — CHOOSE SIZE',
         options: [
           ConfigOption(label: 'A4', priceDelta: 0),
           ConfigOption(label: 'A5', priceDelta: 0),
@@ -54,14 +53,14 @@ final Map<String, ProductConfiguration> productConfigs = {
         ],
       ),
       ConfigStep(
-        title: 'CHOOSE FINISH',
+        title: 'STEP 2 — CHOOSE FINISH',
         options: [
           ConfigOption(label: 'Glossy', priceDelta: 0),
           ConfigOption(label: 'Matte', priceDelta: 0),
         ],
       ),
       ConfigStep(
-        title: 'PAGES',
+        title: 'STEP 3 — PAGES',
         options: [
           ConfigOption(label: '20 Pages', subLabel: '40 photos', priceDelta: 0),
           ConfigOption(label: '32 Pages', subLabel: '64 photos', priceDelta: 0),
@@ -70,22 +69,24 @@ final Map<String, ProductConfiguration> productConfigs = {
       ),
     ],
     priceCalculator: (selected) {
-      final size = selected[0] ?? 0;
-      final finish = selected[1] ?? 0;
-      final pages = selected[2] ?? 0;
+      final size = selected[0];
+      final finish = selected[1];
+      final pages = selected[2];
       
+      // Prices from Web (Glossy) — exact match to products.ts
       final glossyPrices = [
-        [799, 1278, 1598],
-        [479, 766, 958],
-        [269, 430, 538],
-        [199, 318, 398],
+        [799, 1278, 1598], // A4
+        [479, 766,  958],  // A5
+        [269, 430,  538],  // A6
+        [119, 190,  238],  // A7
       ];
       
+      // Prices from Web (Matte) — exact match to products.ts
       final mattePrices = [
-        [999, 1598, 1998],
-        [599, 958, 1198],
-        [339, 542, 678],
-        [249, 398, 498],
+        [999,  1598, 1998], // A4
+        [579,  926,  1158], // A5
+        [319,  510,  638],  // A6
+        [139,  222,  278],  // A7
       ];
       
       if (finish == 0) return glossyPrices[size][pages].toDouble();
@@ -100,18 +101,16 @@ final Map<String, ProductConfiguration> productConfigs = {
     basePrice: 0,
     steps: [
       ConfigStep(
-        title: 'CHOOSE BRAND',
+        title: 'STEP 1 — CHOOSE SIZE',
         options: [
-          ConfigOption(label: 'Dairy Milk Silk', priceDelta: 25),
-          ConfigOption(label: 'Dairy Milk', priceDelta: 18),
-          ConfigOption(label: 'KitKat 2-Finger', priceDelta: 15),
-          ConfigOption(label: '5 Star', priceDelta: 18),
-          ConfigOption(label: 'Munch', priceDelta: 15),
-          ConfigOption(label: 'Perk', priceDelta: 15),
+          ConfigOption(label: 'Small', priceDelta: 15),
+          ConfigOption(label: 'Medium', subLabel: '14 × 12 cm', priceDelta: 25),
+          ConfigOption(label: 'Large', subLabel: '20 × 14 cm', priceDelta: 50),
+          ConfigOption(label: 'Premium', subLabel: '24 × 20 cm', priceDelta: 70),
         ],
       ),
       ConfigStep(
-        title: 'THEME',
+        title: 'STEP 2 — THEME',
         options: [
           ConfigOption(label: 'Birthday', priceDelta: 0),
           ConfigOption(label: 'Anniversary', priceDelta: 0),
@@ -127,40 +126,12 @@ final Map<String, ProductConfiguration> productConfigs = {
     basePrice: 0,
     steps: [
       ConfigStep(
-        title: 'CHOOSE TYPE',
+        title: 'STEP 1 — CHOOSE TYPE',
         options: [
-          ConfigOption(label: 'Polaroid Go', priceDelta: 0),
-          ConfigOption(label: 'Instax Square', priceDelta: 0),
-          ConfigOption(label: 'Polaroid Signature', priceDelta: 0),
+          ConfigOption(label: 'Polaroid Go', priceDelta: 119),
+          ConfigOption(label: 'Instax Square', priceDelta: 249),
+          ConfigOption(label: 'Polaroid Signature', priceDelta: 349),
         ],
-      ),
-      ConfigStep(
-        title: 'CHOOSE QUANTITY',
-        dynamicOptions: (selected) {
-          final type = selected.isNotEmpty ? (selected[0] ?? 0) : 0;
-          if (type == 0) {
-            return [
-              ConfigOption(label: '15 Prints', priceDelta: 119),
-              ConfigOption(label: '30 Prints', priceDelta: 229),
-              ConfigOption(label: '45 Prints', priceDelta: 339),
-              ConfigOption(label: '60 Prints', priceDelta: 399),
-            ];
-          } else if (type == 1) {
-            return [
-              ConfigOption(label: '24 Prints', priceDelta: 249),
-              ConfigOption(label: '32 Prints', priceDelta: 319),
-              ConfigOption(label: '40 Prints', priceDelta: 369),
-              ConfigOption(label: '64 Prints', priceDelta: 549),
-            ];
-          } else {
-            return [
-              ConfigOption(label: '15 Prints', priceDelta: 349),
-              ConfigOption(label: '30 Prints', priceDelta: 649),
-              ConfigOption(label: '45 Prints', priceDelta: 849),
-              ConfigOption(label: '60 Prints', priceDelta: 1099),
-            ];
-          }
-        },
       ),
     ],
   ),
@@ -172,24 +143,18 @@ final Map<String, ProductConfiguration> productConfigs = {
     basePrice: 0,
     steps: [
       ConfigStep(
-        title: 'CHOOSE SIZE & QUANTITY',
+        title: 'STEP 1 — CHOOSE SIZE',
         options: [
-          ConfigOption(label: '4x6 (Min 10)', subLabel: '₹10 / print', priceDelta: 100),
-          ConfigOption(label: '5x7 (Min 5)', subLabel: '₹18 / print', priceDelta: 90),
-          ConfigOption(label: '6x8 (Min 5)', subLabel: '₹25 / print', priceDelta: 125),
-          ConfigOption(label: '8x10', subLabel: '₹49 / print', priceDelta: 49),
-          ConfigOption(label: '8x12', subLabel: '₹59 / print', priceDelta: 59),
-        ],
-      ),
-      ConfigStep(
-        title: 'CHOOSE FINISH',
-        options: [
-          ConfigOption(label: 'Glossy', priceDelta: 0),
-          ConfigOption(label: 'Matte', priceDelta: 0),
+          ConfigOption(label: '4×6 inches', subLabel: 'Min 10 prints · ₹10/print', priceDelta: 100),
+          ConfigOption(label: '5×7 inches', subLabel: 'Min 5 prints · ₹18/print', priceDelta: 90),
+          ConfigOption(label: '6×8 inches', subLabel: 'Min 5 prints · ₹25/print', priceDelta: 125),
+          ConfigOption(label: '8×10 inches', subLabel: '₹49 / print', priceDelta: 49),
+          ConfigOption(label: '8×12 inches', subLabel: '₹59 / print', priceDelta: 59),
         ],
       ),
     ],
   ),
+
   'photo_frames': ProductConfiguration(
     categoryId: 'photo_frames',
     categoryName: 'Photo Frames',
@@ -198,14 +163,14 @@ final Map<String, ProductConfiguration> productConfigs = {
     basePrice: 349,
     steps: [
       ConfigStep(
-        title: 'CHOOSE SIZE & ORIENTATION',
+        title: 'STEP 1 — CHOOSE SIZE & ORIENTATION',
         options: [
           ConfigOption(label: '8 x 12 inch (Portrait)', priceDelta: 0),
           ConfigOption(label: '12 x 8 inch (Landscape)', priceDelta: 0),
         ],
       ),
       ConfigStep(
-        title: 'CHOOSE FRAME COLOR',
+        title: 'STEP 2 — CHOOSE FRAME COLOR',
         options: [
           ConfigOption(label: 'Black Frame', priceDelta: 0),
           ConfigOption(label: 'White Frame', priceDelta: 0),
@@ -222,7 +187,7 @@ final Map<String, ProductConfiguration> productConfigs = {
     basePrice: 0,
     steps: [
       ConfigStep(
-        title: 'CHOOSE SIZE',
+        title: 'STEP 1 — CHOOSE SIZE',
         options: [
           ConfigOption(label: 'A3', subLabel: '11.7 × 16.5 inches', priceDelta: 149),
           ConfigOption(label: 'A2', subLabel: '16.5 × 23.4 inches', priceDelta: 249),
