@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "521792570049",
+    "project_id": "snap-n-wrap-5af0c",
+    "storage_bucket": "snap-n-wrap-5af0c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:521792570049:android:bdb9125764ed2b5615ca40",
+        "android_client_info": {
+          "package_name": "com.snapnwrap.snap_n_wrap_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "521792570049-plkgh563qfbmvp88ovaut1bi29bus2u4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.snapnwrap.snap_n_wrap_mobile",
+            "certificate_hash": "79450cbbe4ec66b5cd3e427588b9c37749c66bdf"
+          }
+        },
+        {
+          "client_id": "521792570049-sbdjsev9jtm00s6p87nstbibed3qne8e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1BbA2TA7xX9Zt6yzCiwf8Onm_meGDMOk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "521792570049-sbdjsev9jtm00s6p87nstbibed3qne8e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
