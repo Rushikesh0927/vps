@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:matrix_gesture_detector/matrix_gesture_detector.dart';
 import '../models/editor_models.dart';
 
 class InteractivePhoto extends StatefulWidget {
@@ -20,15 +19,22 @@ class InteractivePhoto extends StatefulWidget {
 }
 
 class _InteractivePhotoState extends State<InteractivePhoto> {
-  late Matrix4 _matrix;
+  late double _x;
+  late double _y;
+  late double _scale;
+  late double _rotation;
+
+  double _baseScale = 1.0;
+  double _baseRotation = 0.0;
+  Offset _baseOffset = Offset.zero;
 
   @override
   void initState() {
     super.initState();
-    _matrix = Matrix4.identity()
-      ..translate(widget.photo.x, widget.photo.y)
-      ..scale(widget.photo.scaleX, widget.photo.scaleY)
-      ..rotateZ(widget.photo.rotation);
+    _x = widget.photo.x;
+    _y = widget.photo.y;
+    _scale = widget.photo.scaleX;
+    _rotation = widget.photo.rotation;
   }
 
   @override
@@ -37,31 +43,59 @@ class _InteractivePhotoState extends State<InteractivePhoto> {
     if (oldWidget.photo.x != widget.photo.x ||
         oldWidget.photo.y != widget.photo.y ||
         oldWidget.photo.scaleX != widget.photo.scaleX ||
-        oldWidget.photo.scaleY != widget.photo.scaleY ||
         oldWidget.photo.rotation != widget.photo.rotation) {
-      _matrix = Matrix4.identity()
-        ..translate(widget.photo.x, widget.photo.y)
-        ..scale(widget.photo.scaleX, widget.photo.scaleY)
-        ..rotateZ(widget.photo.rotation);
+      _x = widget.photo.x;
+      _y = widget.photo.y;
+      _scale = widget.photo.scaleX;
+      _rotation = widget.photo.rotation;
     }
+  }
+
+  void _notifyTransform() {
+    final m = Matrix4.identity()
+      ..translate(_x, _y)
+      ..scale(_scale, _scale)
+      ..rotateZ(_rotation);
+    widget.onTransform(m);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MatrixGestureDetector(
-      onMatrixUpdate: (m, tm, sm, rm) {
-        setState(() {
-          _matrix = m;
-        });
-        widget.onTransform(_matrix);
+    final matrix = Matrix4.identity()
+      ..translate(_x, _y)
+      ..scale(_scale, _scale)
+      ..rotateZ(_rotation);
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      onScaleStart: (details) {
+        _baseScale = _scale;
+        _baseRotation = _rotation;
+        _baseOffset = Offset(_x, _y);
       },
-      child: GestureDetector(
-        onTap: widget.onTap,
+      onScaleUpdate: (details) {
+        setState(() {
+          if (details.pointerCount == 1) {
+            // Pan only
+            _x = _baseOffset.dx + details.focalPointDelta.dx;
+            _y = _baseOffset.dy + details.focalPointDelta.dy;
+            _baseOffset = Offset(_x, _y); // Update base for continuous panning
+          } else if (details.pointerCount >= 2) {
+            // Zoom and rotate only (no panning to avoid jumpiness)
+            _scale = _baseScale * details.scale;
+            _rotation = _baseRotation + details.rotation;
+          }
+        });
+        _notifyTransform();
+      },
+      child: Container(
+        color: Colors.transparent, // Ensure gesture detector catches events
         child: Transform(
-          transform: _matrix,
+          transform: matrix,
+          alignment: Alignment.center,
           child: Image.file(
             File(widget.photo.previewUrl),
-            fit: BoxFit.contain,
+            fit: BoxFit.cover,
           ),
         ),
       ),
