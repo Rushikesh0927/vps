@@ -85,22 +85,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           .build();
 
       final theme = CFThemeBuilder()
-          .setNavigationBarBackgroundColorRes('#FF5A5F')
+          .setNavigationBarBackgroundColorColor('#FF5A5F')
+          .setButtonBackgroundColor('#FF5A5F')
           .setPrimaryFont('Montserrat')
           .setSecondaryFont('Futura')
           .build();
 
       final cfPaymentComponent = CFPaymentComponentBuilder()
-          .add(CFPaymentModes.CARD)
-          .add(CFPaymentModes.UPI)
-          .add(CFPaymentModes.NB)
-          .add(CFPaymentModes.WALLET)
+          .setComponents([
+            CFPaymentModes.CARD,
+            CFPaymentModes.UPI,
+            CFPaymentModes.NETBANKING,
+            CFPaymentModes.WALLET,
+          ])
           .build();
 
       final dropPayment = CFDropCheckoutPaymentBuilder()
           .setSession(session)
-          .setCFUIPaymentComponent(cfPaymentComponent)
-          .setCFNativeCheckoutUITheme(theme)
+          .setPaymentComponent(cfPaymentComponent)
+          .setTheme(theme)
           .build();
 
       _cfService.doPayment(dropPayment);
