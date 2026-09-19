@@ -19,7 +19,7 @@ class DynamicConfiguratorScreen extends ConsumerStatefulWidget {
 class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorScreen> {
   late List<int?> _selectedOptions;
   double _totalPrice = 0;
-  int _maxVisibleStep = 0;
+  
 
   @override
   void initState() {
@@ -30,12 +30,10 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
       widget.initialSelection!.forEach((key, value) {
         if (key < _selectedOptions.length) {
           _selectedOptions[key] = value;
-          _maxVisibleStep = key + 1;
+          
         }
       });
-      if (_maxVisibleStep >= widget.config.steps.length) {
-        _maxVisibleStep = widget.config.steps.length - 1;
-      }
+      
     } else {
       // If polaroid or standard, set default selections to 0 for all steps so it calculates base price immediately?
       // Actually, if we do progressive disclosure, they must select. Let's auto-select option 0 for the very first step.
@@ -51,10 +49,10 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
     double price = widget.config.basePrice;
     
     // Create a temporary list of selections, falling back to 0 if null for calculation
-    List<int> calcOptions = _selectedOptions.map((e) => e ?? 0).toList();
+    List<int?> calcOptions = _selectedOptions;
     
     if (widget.config.priceCalculator != null) {
-      price = widget.config.priceCalculator!(calcOptions);
+      price = widget.config.priceCalculator!(_selectedOptions);
     } else {
       for (int i = 0; i < widget.config.steps.length; i++) {
         if (_selectedOptions[i] != null) {
@@ -151,7 +149,7 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
 
                         // PROGRESSIVE DISCLOSURE STEPS
                         ...List.generate(widget.config.steps.length, (stepIndex) {
-                          if (stepIndex > _maxVisibleStep) return const SizedBox.shrink();
+                          
                           
                           final step = widget.config.steps[stepIndex];
                           
@@ -182,9 +180,7 @@ class _DynamicConfiguratorScreenState extends ConsumerState<DynamicConfiguratorS
                                       onTap: () {
                                         setState(() {
                                           _selectedOptions[stepIndex] = optIndex;
-                                          if (_maxVisibleStep < widget.config.steps.length - 1 && _maxVisibleStep == stepIndex) {
-                                            _maxVisibleStep++;
-                                          }
+                                          
                                           _calculatePrice();
                                         });
                                       },

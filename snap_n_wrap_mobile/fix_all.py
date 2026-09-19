@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+def run():
+    # Fix 1: Remove "STEP X" duplication from product_config.dart
+    config_content = """import 'package:flutter/material.dart';
 
 class ConfigStep {
   final String title;
@@ -233,3 +235,23 @@ final Map<String, ProductConfiguration> productConfigs = {
     ],
   ),
 };
+"""
+    open('lib/data/product_config.dart', 'w', encoding='utf-8').write(config_content)
+    
+    # Fix 2: Remove progressive disclosure entirely from UI, show all steps at once!
+    ui_c = open('lib/screens/dynamic_configurator_screen.dart', 'r', encoding='utf-8').read()
+    
+    # Remove _maxVisibleStep logic
+    ui_c = ui_c.replace("if (stepIndex > _maxVisibleStep) return const SizedBox.shrink();", "")
+    ui_c = ui_c.replace("if (_maxVisibleStep < widget.config.steps.length - 1 && _maxVisibleStep == stepIndex) {\n                                            _maxVisibleStep++;\n                                          }", "")
+    ui_c = ui_c.replace("if (_maxVisibleStep >= widget.config.steps.length) {\n        _maxVisibleStep = widget.config.steps.length - 1;\n      }", "")
+    ui_c = ui_c.replace("_maxVisibleStep = key + 1;", "")
+    ui_c = ui_c.replace("int _maxVisibleStep = 0;", "")
+    
+    # Fix 3: Also update priceCalculator signature in DynamicConfiguratorScreen to pass List<int?>
+    ui_c = ui_c.replace("List<int> calcOptions = _selectedOptions.map((e) => e ?? 0).toList();", "List<int?> calcOptions = _selectedOptions;")
+    ui_c = ui_c.replace("price = widget.config.priceCalculator!(calcOptions);", "price = widget.config.priceCalculator!(_selectedOptions);")
+
+    open('lib/screens/dynamic_configurator_screen.dart', 'w', encoding='utf-8').write(ui_c)
+
+run()
